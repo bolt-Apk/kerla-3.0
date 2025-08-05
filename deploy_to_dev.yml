@@ -1,0 +1,26 @@
+name: Deploy to dev
+
+on:
+ push:
+    branches:
+      - refactoring_dev
+ workflow_dispatch:
+
+jobs:
+ deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.DEV_HOST_SSH_KEY }}
+          script: |
+            cd /root/development/kerla2-back/kerla2_server
+            git pull
+            flutter pub get
+            sudo systemctl restart serverpod.service 

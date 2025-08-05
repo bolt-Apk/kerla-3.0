@@ -1,0 +1,29 @@
+name: Deploy to Staging Server
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - kerla2_server/**
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Deploy over SSH to Staging
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ vars.STAGE_SSH_HOST }}
+        username: ${{ vars.STAGE_SSH_USERNAME }}
+        key: ${{ secrets.STAGE_SSH_PRIVATE_KEY }}
+        script: |
+          cd /root/kerla2-back/kerla2_server
+          git fetch origin
+          git reset --hard origin/master
+          systemctl restart kerla2.service

@@ -1,0 +1,49 @@
+name: Backup
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Запуск каждый день в 00:00
+  workflow_dispatch: # Добавляем возможность запуска вручную
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up PostgreSQL
+        uses: tj-actions/pg-dump@v3
+        with:
+          database_url: ${{ secrets.STAGE_DATABASE_URL }}
+          path: "backups/backup.dump"
+          options: "-Fc"
+
+      - name: Generate timestamp
+        id: timestamp
+        run: echo "::set-output name=timestamp::$(date +%Y%m%d_%H%M%S)"
+
+      - name: Rename backup file
+        run: |
+          mv backups/backup.dump backups/backup_${{ steps.timestamp.outputs.timestamp }}.dump
+
+      - name: Upload backup to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup
+          path: backups/backup_${{ steps.timestamp.outputs.timestamp }}.dump
+
+      - name: Download backup
+        uses: actions/download-artifact@v4
+        with:
+          name: backup
+
+      - name: Deploy to Yandex Cloud Object Storage
+        uses: paulvstrashnov/yandex-s3-upload-action@main
+        with:
+          accessKeyId: ${{ secrets.YC_ACCESS_KEY_ID }}
+          secretAccessKey: ${{ secrets.YC_SECRET_ACCESS_KEY }}
+          bucket: ${{ secrets.BACKUP_BUCKET }}
+          localPath: "./backups"
+          remotePath: "./backups"
+          clearBucket: false

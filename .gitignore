@@ -46,3 +46,4 @@ app.*.map.json
 /android/app/release
 
 kerla2_server/kerla2-firebase-adminsdk-j6aak-beb5cd6ede.json
+.env
